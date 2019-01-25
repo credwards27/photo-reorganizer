@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Main entry point.
+ */
+function main() {
+    $args = func_get_args();
+    
+    // Get arguments
+    $SRC = $args[1];
+    $DEST = $args[2];
+    
+    // Validate
+    if (!is_dir($SRC)) {
+        echo "Source '{$SRC}' is not a directory";
+        exit(1);
+    }
+    
+    if (!is_dir($DEST)) {
+        echo "Destination '{$DEST}' is not a directory";
+        exit(1);
+    }
+    
+    // Get list of files
+    $FILES = shell_exec("find -L \"{$SRC}\" -type f");
+    $FILES = explode("\n", trim($FILES));
+    
+    foreach ($FILES as $file) {
+        echo "{$file}\n";
+    }
+}
+
+// Run
+call_user_func_array('main', $argv);
