@@ -2,6 +2,63 @@
 <?php
 
 /**
+ * Processes a file using its metadata.
+ *
+ * @param string $file File path.
+ */
+function process_file($file) {
+    if (!is_file($file)) {
+        return;
+    }
+    
+    $fields = implode(' ', array(
+        '-FileName',
+        '-FileTypeExtension',
+        '-MIMEType',
+        '-DateTimeOriginal',
+        '-CreateDate',
+        '-Error'
+    ));
+    
+    // Extract metadata
+    $lines = shell_exec("exiftool {$fields} \"{$file}\"");
+    $lines = explode("\n", preg_replace('/\n+/', "\n", trim($lines)));
+    
+    $meta = (object)array(
+        'file_name' => '',
+        'file_type_extension' => '',
+        'mime_type' => '',
+        'date_time_original' => '',
+        'create_date' => '',
+        'error' => ''
+    );
+    
+    // Parse the data
+    foreach ($lines as $line) {
+        $matches = array();
+        
+        $line = trim($line);
+        
+        if (!preg_match('/^(.*?)\s*?:\s*?(.*?)\s*?$/', $line, $matches)) {
+            continue;
+        }
+        
+        $key = strtolower(preg_replace('/[^A-Za-z0-9]+/i', '_', $matches[1]));
+        $meta->{$key} = trim($matches[2]);
+    }
+    
+    // Exit if any of the following conditions are met
+    switch (true) {
+        case $meta->error:
+        case !preg_match('/image|video|photoshop/', $meta->mime_type):
+            return;
+    }
+    
+    var_dump($meta);
+    echo "\n\n\n";
+}
+
+/**
  * Main entry point.
  */
 function main() {
@@ -23,11 +80,11 @@ function main() {
     }
     
     // Get list of files
-    $FILES = shell_exec("find -L \"{$SRC}\" -type f");
+    $FILES = shell_exec("find -L \"{$SRC}\" -type f \\( ! -iname \".DS_Store\" \\)");
     $FILES = explode("\n", trim($FILES));
     
     foreach ($FILES as $file) {
-        echo "{$file}\n";
+        process_file($file);
     }
 }
 
